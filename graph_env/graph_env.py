@@ -14,7 +14,7 @@ from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 from orchestra_config.orchestra_config import *     # KEEP THIS LINE, DO NOT REMOVE
 from .graph_generator import *
 from maaf_msgs.msg import TeamCommStamped, Bid, Allocation
-from maaf_allocation_node.node_config import *
+from orchestra_config.sim_config import *
 from rlb_simple_sim.Scenario import Scenario
 
 ##################################################################################################################
