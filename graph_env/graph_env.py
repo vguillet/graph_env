@@ -3,6 +3,7 @@
 
 # Built-in/Generic Imports
 from json import dumps, loads
+from pprint import pprint
 
 # Libs
 from networkx import Graph
@@ -16,6 +17,7 @@ from .graph_generator import *
 from maaf_msgs.msg import TeamCommStamped, Bid, Allocation
 from orchestra_config.sim_config import *
 from rlb_simple_sim.Scenario import Scenario
+from maaf_tools.tools import *
 
 ##################################################################################################################
 
@@ -76,6 +78,11 @@ class graph_env(Node):
             callback=self.publish_env
         )
 
+        # -> Compute all shortest paths between all node pairs
+        # self.all_pairs_shortest_paths = dict(nx.all_pairs_shortest_path(self.graph))
+
+        # pprint(self.all_pairs_shortest_paths)
+
         # -> Publish the environment
         # self.publish_env()
 
@@ -85,7 +92,10 @@ class graph_env(Node):
 
     def env_callback(self, msg: TeamCommStamped):
         if msg.meta_action == "environment update":
-            self.graph, self.pos = self.json_to_graph(msg.memo)
+            environment = json_to_graph(graph_json=msg.memo)
+
+            self.graph = environment["graph"]
+            self.pos = environment["pos"]
 
             # -> Display the graph with weights on edges
             nx.draw(self.graph, pos=self.pos, with_labels=True, node_size=500, node_color="skyblue", font_size=8)
@@ -103,41 +113,10 @@ class graph_env(Node):
         msg.target = "all"
 
         msg.meta_action = "environment update"
-        msg.memo = self.graph_to_json()
+        msg.memo = dumps(graph_to_json(graph=self.graph, pos=self.pos))
 
         # Publish the message
         self.env_publisher.publish(msg)
-
-    def graph_to_json(self):
-        """
-        Convert the graph and the positions to a JSON string.
-
-        :return: The JSON string representation of the graph.
-        """
-
-        data = {
-            "env_type": "graph",
-            "graph": nx.node_link_data(self.graph),
-            "pos": {str(k): v for k, v in self.pos.items()}
-        }
-
-        return dumps(data)
-
-    def json_to_graph(self, graph_json: str) -> (Graph, dict):
-        """
-        Convert a JSON string to a graph.
-
-        :param graph_json: The JSON string representation of the graph.
-
-        :return: A graph object.
-        :return: A dictionary containing the positions of the nodes.
-        """
-        data = loads(graph_json)
-
-        graph = nx.node_link_graph(data["graph"])
-        pos = {eval(k): v for k, v in data["pos"].items()}
-
-        return graph, pos
 
 
 def main(args=None):
