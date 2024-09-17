@@ -70,6 +70,14 @@ class graph_env(Node):
                 map_file="Paris_0_256.map"
             )
 
+        # -> Compute all shortest paths
+        self.get_logger().info(f"         > {self}: Computing all shortest paths using floyd_warshall...")
+        # self.environment["all_pairs_shortest_paths"] = dict(nx.all_pairs_shortest_path(self.environment["graph"]))
+        self.all_pairs_shortest_paths = dict(nx.floyd_warshall(self.graph))
+        self.get_logger().info(f"         > {self}: Done computing all shortest paths")
+        
+        # -> Cache results
+
         # ----- Create the publisher
         self.env_publisher = self.create_publisher(
             msg_type=TeamCommStamped,
@@ -118,7 +126,10 @@ class graph_env(Node):
         msg.target = "all"
 
         msg.meta_action = "environment update"
-        msg.memo = dumps(graph_to_json(graph=self.graph, pos=self.pos))
+        environment_dict = graph_to_json(graph=self.graph, pos=self.pos)
+        environment_dict["all_pairs_shortest_paths"] = self.all_pairs_shortest_paths    # > Add precomputed shortest paths
+
+        msg.memo = dumps(environment_dict)
 
         # Publish the message
         self.env_publisher.publish(msg)
