@@ -31,7 +31,7 @@ class graph_env(Node):
         self.declare_parameters(
             namespace="",
             parameters=[
-                ("scenario_id", "simple_sim"),
+                ("scenario_id", "Scenario_0_full_intercession_no_recompute_0_interventionism_0.json"),
             ]
         )
 
@@ -41,7 +41,7 @@ class graph_env(Node):
         self.scenario = Scenario(scenario_id=scenario_id, load_only=True, logger=self.get_logger())
 
         # -> Get the launch parameters
-        self.graph_type = "grid"    # TODO: Cleanup
+        self.graph_type = "benchmark"    # TODO: Cleanup
         self.num_nodes = self.scenario.env_size * self.scenario.env_size
         self.connectivity_percent = self.scenario.env_connectivity
         self.num_branches = 0    # TODO: Cleanup
@@ -63,6 +63,11 @@ class graph_env(Node):
         elif self.graph_type == "random":
             self.graph, self.pos = generate_random_layout(
                 num_nodes=self.num_nodes
+            )
+
+        elif self.graph_type == "benchmark":
+            self.graph, self.pos = generate_benchmark_layout(
+                map_file="Paris_0_256.map"
             )
 
         # ----- Create the publisher

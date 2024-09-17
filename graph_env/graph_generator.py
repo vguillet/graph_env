@@ -3,9 +3,29 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import random
 import math
+from typing import Dict, List, Optional, Tuple
+
+# Local Imports
+try:
+    from graph_env.benchmark_env_loader import MAPFBenchmark
+
+except ModuleNotFoundError:
+    from graph_env.graph_env.benchmark_env_loader import MAPFBenchmark
+
 
 MIN_WEIGHT = 0
 MAX_WEIGHT = 10
+
+
+def generate_benchmark_layout(
+    map_file: str,
+    scenario_file: Optional[str] = None
+    ) -> (nx.Graph, dict):
+
+    root = "/home/vguillet/ros2_ws/src/graph_env/graph_env/Moving_AI_Lab/street-map/"
+    benchmark = MAPFBenchmark(map_file=root+map_file, scenario_file=scenario_file)
+
+    return benchmark.graph, benchmark.pos
 
 
 def generate_grid_layout(
