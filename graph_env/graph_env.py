@@ -4,7 +4,9 @@
 # Built-in/Generic Imports
 from json import dumps, loads
 from pprint import pprint
+import sys
 
+import networkx as nx
 # Libs
 from networkx import Graph
 import rclpy
@@ -41,7 +43,7 @@ class graph_env(Node):
         self.scenario = Scenario(scenario_id=scenario_id, load_only=True, logger=self.get_logger())
 
         # -> Get the launch parameters
-        self.graph_type = "benchmark"    # TODO: Cleanup
+        self.graph_type = self.scenario.environment_type
         self.num_nodes = self.scenario.env_size * self.scenario.env_size
         self.connectivity_percent = self.scenario.env_connectivity
         self.num_branches = 0    # TODO: Cleanup
@@ -65,18 +67,13 @@ class graph_env(Node):
                 num_nodes=self.num_nodes
             )
 
-        elif self.graph_type == "benchmark":
+        elif self.graph_type == "MAPF":
             self.graph, self.pos = generate_benchmark_layout(
-                map_file="Paris_0_256.map"
+                map_file=self.scenario.environment_path
             )
 
-        # -> Compute all shortest paths
-        self.get_logger().info(f"         > {self}: Computing all shortest paths using floyd_warshall...")
-        # self.environment["all_pairs_shortest_paths"] = dict(nx.all_pairs_shortest_path(self.environment["graph"]))
-        self.all_pairs_shortest_paths = dict(nx.floyd_warshall(self.graph))
-        self.get_logger().info(f"         > {self}: Done computing all shortest paths")
-        
-        # -> Cache results
+        # ----- Compute shortest paths from all to tasks
+        self.compute_shortest_paths()
 
         # ----- Create the publisher
         self.env_publisher = self.create_publisher(
@@ -103,6 +100,41 @@ class graph_env(Node):
         nx.draw(self.graph, pos=self.pos)
         # plt.show()
 
+    def compute_shortest_paths(self):
+        # -> Display the graph
+        # nx.draw(self.graph, pos=self.pos)
+        # plt.show()
+
+        self.get_logger().info(f"         > {self}: Computing all shortest paths...")
+        # self.environment["all_pairs_shortest_paths"] = dict(nx.all_pairs_shortest_path(self.environment["graph"]))
+
+        # -> List all task nodes from scenario
+        task_node_locs = [(goto_task["instructions"]["x"], goto_task["instructions"]["y"]) for goto_task in self.scenario.goto_tasks]
+
+        # -> Compute all shortest paths from all nodes to all task nodes
+        matching_nodes = [node for node, position in self.pos.items() if position in task_node_locs]
+
+        # > List all task_node_locs not found
+        missing_nodes = [task_coordinates for task_coordinates in task_node_locs if task_coordinates not in self.pos.values()]
+
+        print(f"Matching: {len(matching_nodes)}/{len(self.scenario.goto_tasks)}:", matching_nodes)
+        print(f"\nMissing: {len(missing_nodes)}/{len(self.scenario.goto_tasks)}:", missing_nodes)
+
+        # print(task_node_locs)
+        # print(matching_nodes)
+
+        sys.exit()
+
+        try:
+            self.all_pairs_shortest_paths = dict(nx.all_pairs_shortest_path_length(self.graph))
+        except nx.NetworkXError as e:
+            print(f"Error: {e}")
+
+        # self.all_pairs_shortest_paths = dict(nx.floyd_warshall(self.graph))
+        self.get_logger().info(f"         > {self}: Done computing all shortest paths")
+
+        # -> Cache results
+
     def env_callback(self, msg: TeamCommStamped):
         if msg.meta_action == "environment update":
             environment = json_to_graph(graph_json=msg.memo)
@@ -127,7 +159,7 @@ class graph_env(Node):
 
         msg.meta_action = "environment update"
         environment_dict = graph_to_json(graph=self.graph, pos=self.pos)
-        environment_dict["all_pairs_shortest_paths"] = self.all_pairs_shortest_paths    # > Add precomputed shortest paths
+        environment_dict["all_pairs_shortest_paths"] = dict(self.all_pairs_shortest_paths)    # > Add precomputed shortest paths
 
         msg.memo = dumps(environment_dict)
 

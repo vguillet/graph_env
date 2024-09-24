@@ -126,7 +126,7 @@ class MAPFBenchmark:
             solution: Optional[List[List[Tuple[int, int]]]] = None,
     ):
         # Draw the graph
-        nx.draw(self.graph, pos=self.pos)
+        nx.draw(self.graph, pos=self.pos, node_size=0.1)
         plt.show()
 
         nx.draw_networkx(
@@ -231,7 +231,7 @@ class MAPFBenchmark:
 
 
 if __name__ == "__main__":
-    root = "/home/vguillet/ros2_ws/src/environment_node/environment_node/MAF_Environments/Graph/Moving_AI_Lab/street-map/"
+    root = "/home/vguillet/ros2_ws/src/graph_env/graph_env/Moving_AI_Lab/street-map/"
     benchmark = MAPFBenchmark(root+"Paris_0_256.map", "data/scen_1.txt")
     print(benchmark)
     benchmark.draw(1)

@@ -25,7 +25,37 @@ def generate_benchmark_layout(
     root = "/home/vguillet/ros2_ws/src/graph_env/graph_env/Moving_AI_Lab/street-map/"
     benchmark = MAPFBenchmark(map_file=root+map_file, scenario_file=scenario_file)
 
-    return benchmark.graph, benchmark.pos
+    print("> Graph connected:", nx.is_connected(benchmark.graph))
+
+    # > Check graph connectedness
+    if not nx.is_connected(benchmark.graph):
+        print("!!! Graph is not connected. Reducing to the largest connected component...")
+        # Find all connected components
+        components = nx.connected_components(benchmark.graph)
+
+        # Get the largest connected component
+        largest_component = max(components, key=len)
+
+        # Create a subgraph containing only the largest component
+        graph = benchmark.graph.subgraph(largest_component).copy()
+
+        # Generate corresponding pos
+        unfiltered_pos = benchmark.pos
+        pos = {node: unfiltered_pos[node] for node in graph}
+
+    else:
+        graph = benchmark.graph
+        pos = benchmark.pos
+
+    # > Check for self-loops
+    self_loops = list(nx.selfloop_edges(graph))
+    print(f"> Graph contains self-loops: {self_loops is not None}")
+
+    # Draw the graph
+    # nx.draw(graph, pos=pos, node_size=0.1)
+    # plt.show()
+
+    return graph, pos
 
 
 def generate_grid_layout(
