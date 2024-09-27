@@ -52,8 +52,8 @@ def generate_benchmark_layout(
     print(f"> Graph contains self-loops: {self_loops is not None}")
 
     # Draw the graph
-    # nx.draw(graph, pos=pos, node_size=0.1)
-    # plt.show()
+    #nx.draw(graph, pos=pos, node_size=0.1)
+    #plt.show()
 
     return graph, pos
 

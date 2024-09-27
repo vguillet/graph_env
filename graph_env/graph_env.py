@@ -17,9 +17,16 @@ from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 from orchestra_config.orchestra_config import *     # KEEP THIS LINE, DO NOT REMOVE
 from .graph_generator import *
 from maaf_msgs.msg import TeamCommStamped, Bid, Allocation
-from orchestra_config.sim_config import *
-from rlb_simple_sim.Scenario import Scenario
-from maaf_tools.tools import *
+
+try:
+    from orchestra_config.sim_config import *
+    from rlb_simple_sim.Scenario import Scenario
+    from maaf_tools.tools import *
+
+except ModuleNotFoundError:
+    from orchestra_config.orchestra_config.sim_config import *
+    from rlb_simple_sim.rlb_simple_sim.Scenario import Scenario
+    from maaf_tools.maaf_tools.tools import *
 
 ##################################################################################################################
 
@@ -88,11 +95,6 @@ class graph_env(Node):
             callback=self.publish_env
         )
 
-        # -> Compute all shortest paths between all node pairs
-        # self.all_pairs_shortest_paths = dict(nx.all_pairs_shortest_path(self.graph))
-
-        # pprint(self.all_pairs_shortest_paths)
-
         # -> Publish the environment
         # self.publish_env()
 
@@ -114,23 +116,30 @@ class graph_env(Node):
         # -> Compute all shortest paths from all nodes to all task nodes
         matching_nodes = [node for node, position in self.pos.items() if position in task_node_locs]
 
-        # > List all task_node_locs not found
-        missing_nodes = [task_coordinates for task_coordinates in task_node_locs if task_coordinates not in self.pos.values()]
-
         print(f"Matching: {len(matching_nodes)}/{len(self.scenario.goto_tasks)}:", matching_nodes)
-        print(f"\nMissing: {len(missing_nodes)}/{len(self.scenario.goto_tasks)}:", missing_nodes)
+        print("Computing all shortest paths from all nodes to all task nodes...")
+        self.all_pairs_shortest_paths = {}
 
-        # print(task_node_locs)
-        # print(matching_nodes)
+        for i, task_node_loc in enumerate(task_node_locs):
+            print(f"> Computing shortest paths - {i+1}/{len(task_node_locs)}")
 
-        sys.exit()
+            # > Find node corresponding to task
+            task_node = [node for node, position in self.pos.items() if position == task_node_loc][0]
 
-        try:
-            self.all_pairs_shortest_paths = dict(nx.all_pairs_shortest_path_length(self.graph))
-        except nx.NetworkXError as e:
-            print(f"Error: {e}")
+            # > Find paths from node to all other nodes
+            paths = dict(nx.single_source_shortest_path(G=self.graph, source=task_node))
 
-        # self.all_pairs_shortest_paths = dict(nx.floyd_warshall(self.graph))
+            # > Add paths from each node to the task node
+            for source_node, path in paths.items():
+                # > Invert path
+                path.reverse()
+
+                # > Record path from source to task node
+                if source_node not in self.all_pairs_shortest_paths.keys():
+                    self.all_pairs_shortest_paths[str(source_node)] = {}
+
+                self.all_pairs_shortest_paths[str(source_node)][str(task_node)] = path
+
         self.get_logger().info(f"         > {self}: Done computing all shortest paths")
 
         # -> Cache results
@@ -158,8 +167,8 @@ class graph_env(Node):
         msg.target = "all"
 
         msg.meta_action = "environment update"
-        environment_dict = graph_to_json(graph=self.graph, pos=self.pos)
-        environment_dict["all_pairs_shortest_paths"] = dict(self.all_pairs_shortest_paths)    # > Add precomputed shortest paths
+        # environment_dict = graph_to_json(graph=self.graph, pos=self.pos, shortest_paths=self.all_pairs_shortest_paths)
+        environment_dict = graph_to_json(graph=self.graph, pos=self.pos, shortest_paths=None)
 
         msg.memo = dumps(environment_dict)
 
