@@ -5,6 +5,7 @@
 from json import dumps, loads
 from pprint import pprint
 import sys
+import os
 
 import networkx as nx
 # Libs
@@ -107,42 +108,60 @@ class graph_env(Node):
         # nx.draw(self.graph, pos=self.pos)
         # plt.show()
 
-        self.get_logger().info(f"         > {self}: Computing all shortest paths...")
-        # self.environment["all_pairs_shortest_paths"] = dict(nx.all_pairs_shortest_path(self.environment["graph"]))
+        # -> Retrieve path from scenario ID
+        shortest_paths_path = f"/home/vguillet/ros2_ws/src/rlb_simple_sim/rlb_simple_sim/Configs/{self.scenario.scenario_id.split('_')[1]}_shortest_paths.json"
 
-        # -> List all task nodes from scenario
-        task_node_locs = [(goto_task["instructions"]["x"], goto_task["instructions"]["y"]) for goto_task in self.scenario.goto_tasks]
+        # -> If path exists, parse it
+        if os.path.exists(shortest_paths_path):
+            print(f"Loading shortest paths from file: {shortest_paths_path}")
 
-        # -> Compute all shortest paths from all nodes to all task nodes
-        matching_nodes = [node for node, position in self.pos.items() if position in task_node_locs]
+            with open(shortest_paths_path, "r") as f:
+                all_pairs_shortest_paths = loads(f.read())
+                self.all_pairs_shortest_paths = {eval(k): {eval(k2): v2 for k2, v2 in v.items()} for k, v in all_pairs_shortest_paths.items()}
 
-        print(f"Matching: {len(matching_nodes)}/{len(self.scenario.goto_tasks)}:", matching_nodes)
-        print("Computing all shortest paths from all nodes to all task nodes...")
-        self.all_pairs_shortest_paths = {}
+                self.get_logger().info(f"         > {self}: Loaded shortest paths from file")
 
-        for i, task_node_loc in enumerate(task_node_locs):
-            print(f"> Computing shortest paths - {i+1}/{len(task_node_locs)}")
+        else:
+            self.get_logger().info(f"         > {self}: Computing all shortest paths...")
 
-            # > Find node corresponding to task
-            task_node = [node for node, position in self.pos.items() if position == task_node_loc][0]
+            # -> List all task nodes from scenario
+            task_node_locs = [(goto_task["instructions"]["x"], goto_task["instructions"]["y"]) for goto_task in self.scenario.goto_tasks]
 
-            # > Find paths from node to all other nodes
-            paths = dict(nx.single_source_shortest_path(G=self.graph, source=task_node))
+            # -> Compute all shortest paths from all nodes to all task nodes
+            matching_nodes = [node for node, position in self.pos.items() if position in task_node_locs]
 
-            # > Add paths from each node to the task node
-            for source_node, path in paths.items():
-                # > Invert path
-                path.reverse()
+            print(f"Matching: {len(matching_nodes)}/{len(self.scenario.goto_tasks)}:", matching_nodes)
+            print("Computing all shortest paths from all nodes to all task nodes...")
+            self.all_pairs_shortest_paths = {}
 
-                # > Record path from source to task node
-                if source_node not in self.all_pairs_shortest_paths.keys():
-                    self.all_pairs_shortest_paths[str(source_node)] = {}
+            for i, task_node_loc in enumerate(task_node_locs):
+                print(f"> Computing shortest paths - {i+1}/{len(task_node_locs)}")
 
-                self.all_pairs_shortest_paths[str(source_node)][str(task_node)] = path
+                # > Find node corresponding to task
+                task_node = [node for node, position in self.pos.items() if position == task_node_loc][0]
 
-        self.get_logger().info(f"         > {self}: Done computing all shortest paths")
+                # > Find paths from node to all other nodes
+                paths = dict(nx.single_source_shortest_path(G=self.graph, source=task_node))
 
-        # -> Cache results
+                # > Add paths from each node to the task node
+                for source_node, path in paths.items():
+                    # > Invert path
+                    path.reverse()
+
+                    # > Record path from source to task node
+                    if source_node not in self.all_pairs_shortest_paths.keys():
+                        self.all_pairs_shortest_paths[str(source_node)] = {}
+
+                    self.all_pairs_shortest_paths[str(source_node)][str(task_node)] = path
+
+            self.get_logger().info(f"         > {self}: Done computing all shortest paths")
+
+            # -> Cache results to file
+            with open(shortest_paths_path, "w") as f:
+                all_pairs_shortest_paths = {str(k): {str(k2): v2 for k2, v2 in v.items()} for k, v in self.all_pairs_shortest_paths.items()}
+                f.write(dumps(all_pairs_shortest_paths))
+
+                print(f"Saved shortest paths to file: {self.scenario.scenario_id}")
 
     def env_callback(self, msg: TeamCommStamped):
         if msg.meta_action == "environment update":
