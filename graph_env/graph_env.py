@@ -109,7 +109,7 @@ class graph_env(Node):
         # plt.show()
 
         # -> Retrieve path from scenario ID
-        shortest_paths_path = f"/home/vguillet/ros2_ws/src/rlb_simple_sim/rlb_simple_sim/Configs/{self.scenario.scenario_id.split('_')[1]}_shortest_paths.json"
+        shortest_paths_path = f"/home/vguillet/ros2_ws/src/rlb_simple_sim/rlb_simple_sim/Parsed_maps/{self.scenario.scenario_id.split('_')[1]}_shortest_paths.json"
 
         # -> If path exists, parse it
         if os.path.exists(shortest_paths_path):
@@ -149,7 +149,7 @@ class graph_env(Node):
                     path.reverse()
 
                     # > Record path from source to task node
-                    if source_node not in self.all_pairs_shortest_paths.keys():
+                    if str(source_node) not in self.all_pairs_shortest_paths.keys():
                         self.all_pairs_shortest_paths[str(source_node)] = {}
 
                     self.all_pairs_shortest_paths[str(source_node)][str(task_node)] = path
