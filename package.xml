@@ -7,6 +7,11 @@
   <maintainer email="victor.guillet@gmail.com">vguillet</maintainer>
   <license>TODO: License declaration</license>
 
+  <exec_depend>maaf_tools</exec_depend>
+  <exec_depend>maaf_msgs</exec_depend>
+  <exec_depend>graph_env</exec_depend>
+  <exec_depend>orchestra_config</exec_depend>
+
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>

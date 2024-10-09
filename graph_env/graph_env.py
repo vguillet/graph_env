@@ -2,19 +2,13 @@
 ##################################################################################################################
 
 # Built-in/Generic Imports
-from pprint import pprint
-import sys
 import os
 
-import networkx as nx
 # Libs
-from networkx import Graph
 import rclpy
 from rclpy.node import Node
-from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 
 # Local Imports
-from orchestra_config.orchestra_config import *     # KEEP THIS LINE, DO NOT REMOVE
 from .graph_generator import *
 from maaf_msgs.msg import TeamCommStamped, Bid, Allocation
 
@@ -23,7 +17,7 @@ try:
     from rlb_simple_sim.Scenario import Scenario
     from maaf_tools.tools import *
 
-except ModuleNotFoundError:
+except ImportError:
     from orchestra_config.orchestra_config.sim_config import *
     from rlb_simple_sim.rlb_simple_sim.Scenario import Scenario
     from maaf_tools.maaf_tools.tools import *

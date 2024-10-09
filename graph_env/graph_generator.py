@@ -9,7 +9,7 @@ from typing import Dict, List, Optional, Tuple
 try:
     from graph_env.benchmark_env_loader import MAPFBenchmark
 
-except ModuleNotFoundError:
+except ImportError:
     from graph_env.graph_env.benchmark_env_loader import MAPFBenchmark
 
 
