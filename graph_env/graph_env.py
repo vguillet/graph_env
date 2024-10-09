@@ -2,7 +2,6 @@
 ##################################################################################################################
 
 # Built-in/Generic Imports
-from json import dumps, loads
 from pprint import pprint
 import sys
 import os
@@ -109,7 +108,7 @@ class graph_env(Node):
         # plt.show()
 
         # -> Retrieve path from scenario ID
-        shortest_paths_path = f"/home/vguillet/ros2_ws/src/rlb_simple_sim/rlb_simple_sim/Parsed_maps/{self.scenario.scenario_id.split('_')[1]}_shortest_paths.json"
+        shortest_paths_path = f"/home/vguillet/ros2_ws/src/rlb_simple_sim/rlb_simple_sim/Parsed_maps/{self.scenario.scenario_id.split('_')[1]}_{self.scenario.scenario_id.split('_')[2]}_shortest_paths.json"
 
         # -> If path exists, parse it
         if os.path.exists(shortest_paths_path):
@@ -130,8 +129,14 @@ class graph_env(Node):
             # -> Compute all shortest paths from all nodes to all task nodes
             matching_nodes = [node for node, position in self.pos.items() if position in task_node_locs]
 
-            print(f"Matching: {len(matching_nodes)}/{len(self.scenario.goto_tasks)}:", matching_nodes)
-            print("Computing all shortest paths from all nodes to all task nodes...")
+            print(f"\nMatching nodes ({len(matching_nodes)}/{len(self.scenario.goto_tasks)}):", matching_nodes)
+
+            # > Print missing nodes
+            missing_nodes = [task_node_loc for task_node_loc in task_node_locs if task_node_loc not in self.pos.values()]
+            print(f"Missing nodes  ({len(missing_nodes)}/{len(self.scenario.goto_tasks)}):", missing_nodes)
+
+            # -> Compute all shortest paths from all nodes to all task nodes
+            print("\nComputing all shortest paths from all nodes to all task nodes...")
             self.all_pairs_shortest_paths = {}
 
             for i, task_node_loc in enumerate(task_node_locs):
@@ -149,10 +154,10 @@ class graph_env(Node):
                     path.reverse()
 
                     # > Record path from source to task node
-                    if str(source_node) not in self.all_pairs_shortest_paths.keys():
-                        self.all_pairs_shortest_paths[str(source_node)] = {}
+                    if source_node not in self.all_pairs_shortest_paths.keys():
+                        self.all_pairs_shortest_paths[source_node] = {}
 
-                    self.all_pairs_shortest_paths[str(source_node)][str(task_node)] = path
+                    self.all_pairs_shortest_paths[source_node][task_node] = path
 
             self.get_logger().info(f"         > {self}: Done computing all shortest paths")
 
@@ -162,6 +167,9 @@ class graph_env(Node):
                 f.write(dumps(all_pairs_shortest_paths))
 
                 print(f"Saved shortest paths to file: {self.scenario.scenario_id}")
+
+        # print(f"Shortest paths: {self.all_pairs_shortest_paths.keys()}")
+        # print(f"Shortest paths: {self.all_pairs_shortest_paths[0].keys()}")
 
     def env_callback(self, msg: TeamCommStamped):
         if msg.meta_action == "environment update":
