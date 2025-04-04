@@ -13,12 +13,12 @@ from .graph_generator import *
 from maaf_msgs.msg import TeamCommStamped, Bid, Allocation
 
 try:
-    from orchestra_config.sim_config import *
+    from maaf_config.maaf_config import *
     from rlb_simple_sim.Scenario import Scenario
     from maaf_tools.tools import *
 
 except ImportError:
-    from orchestra_config.orchestra_config.sim_config import *
+    from maaf_config.maaf_config.maaf_config import *
     from rlb_simple_sim.rlb_simple_sim.Scenario import Scenario
     from maaf_tools.maaf_tools.tools import *
 
